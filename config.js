@@ -9,6 +9,7 @@ window.APP_CONFIG = {
   files: {
     matriz: '01LSQ5723TR5LRXLVXIFBLNVTDW3SAFOUB',        // Matriz de compras internacionales.xlsx (original, solo lectura)
     recibidas: '01LSQ5727FNEJXJKYFW5CZBG27VEIFCR5B',     // Recibidas resumen.csv (flujo diario 10 pm)
-    inspecciones: '01LSQ5724N3EP2SOAWKFHKDE5CKRY3UPNZ'   // Inspecciones resumen.csv (flujo diario 10 pm)
+    inspecciones: '01LSQ5724N3EP2SOAWKFHKDE5CKRY3UPNZ',
+    historial: '01LSQ5722NTXLFAUEW6NALFKUOT6DPY23T'   // Inspecciones historial.csv (inspecciones antiguas ya depuradas de la lista)   // Inspecciones resumen.csv (flujo diario 10 pm)
   }
 };

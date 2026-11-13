@@ -51,6 +51,8 @@
     let h = aoa.findIndex((r, i) => i < 20 && r.some((c) => low(c) === 'oc') && r.some((c) => low(c) === 'status'));
     if (h < 0) h = 0;
     const columns = aoa[h].map((c) => String(c).trim());
+    const ocI = columns.findIndex((c) => c.toUpperCase() === 'OC');
+    if (ocI >= 0 && !columns.some((c) => c.toUpperCase() === 'PROVEEDOR')) columns[ocI + 1] = 'PROVEEDOR';
     const rows = aoa.slice(h + 1)
       .filter((r) => r.some((c) => String(c).trim() !== ''))
       .map((r) => { const o = {}; columns.forEach((c, j) => { if (c) o[c] = String(r[j] == null ? '' : r[j]).trim(); }); return o; });
@@ -119,7 +121,16 @@
         const as = id === 'matriz' ? 'buf' : 'text';
         const raw = await graph('/drives/' + d + '/items/' + CFG.files[id] + '/content', tk, as);
         const answer = id === 'matriz' ? leerMatriz(raw) : raw.replace(/^﻿/, '');
-        state[id] = { status: 'ok', data: loaders[id]({ answer }).rows };
+        let rows = loaders[id]({ answer }).rows;
+        if (id === 'inspecciones' && CFG.files.historial) {
+          // La lista se depura cada mes: se une el historial guardado con la lista actual (por Id; manda la lista).
+          const hist = await graph('/drives/' + d + '/items/' + CFG.files.historial + '/content', tk, 'text');
+          const m = new Map();
+          loaders[id]({ answer: hist.replace(/^\uFEFF/, '') }).rows.forEach((r) => m.set(r.Id, r));
+          rows.forEach((r) => m.set(r.Id, r));
+          rows = [...m.values()];
+        }
+        state[id] = { status: 'ok', data: rows };
       } catch (e) {
         window.__lastError = e.message;
         state[id] = { status: e.declined ? 'declined' : 'error' };
