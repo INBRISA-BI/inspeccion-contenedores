@@ -1,9 +1,9 @@
 // Configuración del dashboard. Solo edita este archivo.
 window.APP_CONFIG = {
   // Id de aplicación (cliente) del registro en Microsoft Entra (ver README.md)
-  clientId: 'PEGAR-AQUI-EL-ID-DE-APLICACION',
+  clientId: '5f4d98f1-0d8f-48a2-b4fa-d08d14d5ac1f',
   // 'organizations' funciona para cualquier cuenta de trabajo; o pon el Id de tu tenant
-  tenant: 'organizations',
+  tenant: '7842b47f-7df1-435d-9880-eda8e4177489',
   // Biblioteca de SharePoint (drive) donde viven los archivos y el Id de cada archivo
   driveId: 'b!SmRLu76aXE6slyY60dxlZYGy-CKjnExIqBuhfV9qRi87jVvb3AprSpErISiudpJv',
   files: {
