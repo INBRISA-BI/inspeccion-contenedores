@@ -76,9 +76,9 @@
     try {
       const raw = await (await g('/drives/' + CFG.driveId + '/items/' + CFG.files.recibidas + '/content', null, true)).text();
       const rows = parseCsv(raw.replace(/^﻿/, '')), h = rows[0].map((x) => x.trim());
-      const iOc = h.indexOf('OC'), iPr = h.indexOf('PROVEEDOR'), iAta = h.indexOf('ATA');
+      const iOc = h.indexOf('OC'), iPr = h.indexOf('PROVEEDOR'), dI = ['Dia en planta', 'Mes en planta', 'ATA', 'ETA'].map((k) => h.indexOf(k));
       const m = new Map();
-      rows.slice(1).forEach((r) => { const oc = (r[iOc] || '').trim(); if (!oc) return; const a = Number(r[iAta]); if (!m.has(oc) || a > m.get(oc).a) m.set(oc, { oc, pr: (r[iPr] || '').trim(), a: a || 0 }); });
+      rows.slice(1).forEach((r) => { const oc = (r[iOc] || '').trim(); if (!oc) return; const a = dI.map((i) => Number(r[i]) || 0).find(Boolean) || 0; if (!m.has(oc) || a > m.get(oc).a) m.set(oc, { oc, pr: (r[iPr] || '').trim(), a: a || 0 }); });
       [...m.values()].sort((a, b) => b.a - a.a || Number(b.oc) - Number(a.oc)).forEach((o) => sel.appendChild(new Option('OC ' + o.oc + (o.pr ? ' · ' + o.pr : ''), o.oc)));
     } catch (e) { /* el campo OC es opcional */ }
   }

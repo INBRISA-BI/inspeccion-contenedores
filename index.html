@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Calidad INBRISA</title>
-<link rel="stylesheet" href="base.css?v=5">
+<link rel="stylesheet" href="base.css?v=6">
 <style>
   body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .625rem 1rem; border-bottom: 1px solid var(--color-border-line); background: var(--color-panel); }
@@ -40,11 +40,11 @@
   <iframe id="f-resumen" title="Resumen de producto off spec"></iframe>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
-<script src="config.js?v=5"></script>
-<script src="gate.js?v=5"></script>
-<script src="auth.js?v=5"></script>
+<script src="config.js?v=6"></script>
+<script src="gate.js?v=6"></script>
+<script src="auth.js?v=6"></script>
 <script>
-  const SRC = { contenedores: 'contenedores.html?v=5', offspec: 'registro.html?v=5', resumen: 'resumen.html?v=5', fichas: window.APP_CONFIG.fichasUrl };
+  const SRC = { contenedores: 'contenedores.html?v=6', offspec: 'registro.html?v=6', resumen: 'resumen.html?v=6', fichas: window.APP_CONFIG.fichasUrl };
   const SCOPES = ['Files.Read.All', 'Sites.ReadWrite.All'];
   const $ = (id) => document.getElementById(id);
   function show(tab) {
