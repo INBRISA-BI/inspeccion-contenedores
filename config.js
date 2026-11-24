@@ -1,5 +1,15 @@
 // Configuración del dashboard. Solo edita este archivo.
 window.APP_CONFIG = {
+  // Dirección del sitio (única URL registrada en Entra como redirección)
+  redirectUri: 'https://inbrisa-bi.github.io/inspeccion-contenedores/',
+  fichasUrl: 'https://inbrisa-bi.github.io/fichas-calidad/',
+  // Sitio de SharePoint y listas usadas por el registro de producto off spec
+  site: { host: 'inbrisa.sharepoint.com', path: '/sites/Produccion' },
+  lists: {
+    productos: 'a360b1ef-db85-4b6b-86de-d7c65c843782',   // Info de Productos (producto terminado)
+    ps: 'fc1da8a8-c62c-4bd5-a5c8-0989f46fc9fc',          // Info de PS (semielaborados)
+    offspec: 'a7f18829-2e8d-4c7b-b3cf-1f8b219647f9'      // CALI_ProductoOffSpec (registros)
+  },
   // Id de aplicación (cliente) del registro en Microsoft Entra (ver README.md)
   clientId: '5f4d98f1-0d8f-48a2-b4fa-d08d14d5ac1f',
   // 'organizations' funciona para cualquier cuenta de trabajo; o pon el Id de tu tenant

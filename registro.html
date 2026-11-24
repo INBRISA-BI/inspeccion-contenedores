@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Registro de producto off spec</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  body { padding: clamp(1rem, 3vw, 2rem); }
+  .wrap { max-width: 44rem; margin-inline: auto; display: flex; flex-direction: column; gap: var(--cds-gap-lg); }
+  h1 { margin: 0; font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); }
+  .sub { margin: .375rem 0 0; color: var(--color-fg-muted); }
+  .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+  .field { display: flex; flex-direction: column; gap: .3125rem; min-width: 0; }
+  .field > label, .field > .lbl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: 1rem; }
+  input[type=text], input[type=search], input[type=date], input[type=number], select, textarea {
+    font: inherit; width: 100%; color: var(--color-fg); background: var(--color-bg); border: 1px solid var(--color-border-line);
+    border-radius: var(--cds-radius); padding: .5625rem .75rem; min-height: 2.75rem; }
+  textarea { min-height: 5rem; resize: vertical; }
+  input:disabled, select:disabled { opacity: .55; cursor: not-allowed; }
+  .seg { display: flex; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; background: var(--color-bg); }
+  .seg button { flex: 1; font: inherit; min-height: 2.75rem; border: 0; background: transparent; color: var(--color-fg-muted); cursor: pointer; padding: .5rem .75rem; }
+  .seg button + button { border-left: 1px solid var(--color-border-line); }
+  .seg button[aria-checked="true"] { background: var(--color-fg); color: var(--color-bg); }
+  .combo { position: relative; }
+  .list { position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 4px); max-height: 18rem; overflow: auto; margin: 0; padding: .25rem; list-style: none;
+    background: var(--cds-surface-popover); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); }
+  .list[hidden] { display: none; }
+  .list li { padding: .5rem .625rem; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; gap: .125rem; }
+  .list li[aria-selected="true"], .list li:hover { background: var(--cds-surface-hover); }
+  .list .cod { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .list .more, .list .none { padding: .5rem .625rem; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); cursor: default; }
+  .picked { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); min-height: 1.1em; }
+  .actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .ic-login { min-height: 2.75rem; padding-inline: 1.5rem; }
+  .ic-login:disabled { opacity: .55; cursor: not-allowed; }
+  .msg { margin: 0; font-size: var(--cds-font-size-body); }
+  .msg.ok { color: var(--color-ok); } .msg.bad { color: var(--color-bad); }
+  .note { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: 0; }
+  h2 { margin: 0; font-size: 1.0625rem; font-weight: 600; }
+  .tw { overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font-size: var(--cds-font-size-caption); font-weight: 600; color: var(--color-fg-muted); padding: .5rem .625rem; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  td { padding: .5rem .625rem; border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+  td.n, th.n { text-align: right; }
+  #gate { display: none; text-align: center; padding: 2rem 0; }
+  #gate p { color: var(--color-fg-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Registro de producto off spec</h1>
+    <p class="sub">Producto que sale de la operación fuera de especificación. Cada registro se guarda en la lista de SharePoint CALI_ProductoOffSpec.</p>
+  </header>
+
+  <div id="gate">
+    <p id="gate-msg">Inicia sesión con tu cuenta de Microsoft para registrar producto.</p>
+    <button class="ic-login" id="btn-login" type="button">Iniciar sesión con Microsoft</button>
+  </div>
+
+  <form class="card" id="form" novalidate hidden>
+    <div class="field">
+      <span class="lbl" id="l-tipo">1. Tipo de producto</span>
+      <div class="seg" role="radiogroup" aria-labelledby="l-tipo" id="tipo">
+        <button type="button" role="radio" aria-checked="false" data-tipo="terminado">Producto terminado</button>
+        <button type="button" role="radio" aria-checked="false" data-tipo="semi">Semielaborado</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="prod">2. Producto</label>
+      <div class="combo">
+        <input type="text" id="prod" role="combobox" aria-expanded="false" aria-controls="opts" aria-autocomplete="list" autocomplete="off" disabled placeholder="Primero elige el tipo de producto">
+        <ul class="list" id="opts" role="listbox" hidden></ul>
+      </div>
+      <div class="picked" id="picked" aria-live="polite"></div>
+    </div>
+
+    <div class="row">
+      <div class="field"><label for="defecto">3. Tipo de defecto</label><select id="defecto"></select></div>
+      <div class="field"><label for="trat">4. Tratamiento a realizar</label><select id="trat"></select></div>
+    </div>
+
+    <div class="row">
+      <div class="field"><label for="fecha">5. Fecha</label><input type="date" id="fecha"></div>
+      <div class="field"><label for="cant">6. Cantidad <span id="und"></span></label><input type="number" id="cant" inputmode="decimal" min="0" step="any"></div>
+    </div>
+
+    <div class="field"><label for="obs">Observaciones <span id="obs-req"></span></label><textarea id="obs" maxlength="1000"></textarea></div>
+
+    <div class="actions">
+      <button class="ic-login" id="send" type="submit" disabled>Registrar</button>
+      <p class="msg" id="msg" role="status" aria-live="polite"></p>
+    </div>
+  </form>
+
+  <section class="card" id="recent" hidden>
+    <h2>Últimos registros</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Fecha</th><th>Producto</th><th>Defecto</th><th class="n">Cantidad</th><th>Tratamiento</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+    <p class="note" id="rnote"></p>
+  </section>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="config.js"></script>
+<script src="gate.js"></script>
+<script src="auth.js"></script>
+<script src="registro.js"></script>
+</body>
+</html>

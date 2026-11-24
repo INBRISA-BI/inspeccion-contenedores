@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inspección de contenedores</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-anthropic-serif: Georgia, "Times New Roman", serif;
+    --color-bg: #faf9f5; --color-panel: #ffffff; --color-fg: #1f1e1d; --color-fg-muted: #66645f;
+    --color-border-line: #e3e0d8; --color-ok: #2d7a4b; --color-warn: #b7791f; --color-bad: #c0392b;
+    --cds-radius: 8px; --cds-gap-lg: 1.5rem; --cds-gap-md: 1rem;
+    --cds-pad-lg: 1.25rem; --cds-pad-md: 1rem; --cds-pad-sm: .5rem; --cds-pad-xs: .25rem;
+    --cds-font-size-title: 1.75rem; --cds-font-size-heading: 1.0625rem; --cds-font-size-body: .9375rem; --cds-font-size-caption: .8125rem;
+    --cds-font-weight-medium: 600; --cds-dur-slow: .3s;
+    --cds-chart-grid: #e3e0d8; --cds-chart-muted: #cfcbc0; --cds-chart-status-ok: #2d7a4b;
+    --cds-surface-popover: #ffffff; --cds-border: #d6d2c6; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.15);
+    --cds-surface-hover: rgba(127,127,127,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-bg: #1f1e1d; --color-panel: #2a2927; --color-fg: #f3f1ea; --color-fg-muted: #a8a59c;
+      --color-border-line: #3d3b37; --color-ok: #5fbf84; --color-warn: #e0a84a; --color-bad: #e5675a;
+      --cds-chart-grid: #3d3b37; --cds-chart-muted: #4a4843; --cds-chart-status-ok: #5fbf84;
+      --cds-surface-popover: #2a2927; --cds-border: #4a4843;
+    }
+  }
+  html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
+  body { padding: clamp(1rem, 3vw, 2rem); }
+  .ic-login { font: inherit; margin-top: .75rem; padding: .5rem 1rem; border-radius: var(--cds-radius); border: 0; background: var(--color-fg); color: var(--color-bg); cursor: pointer; }
+  .ic-login[hidden] { display: none; }
+</style>
+<style>
+  #dash-root { --dash-gutter: clamp(1rem, 3vw, 2rem); }
+  .ic { max-width: 72rem; margin-inline: auto; display: flex; flex-direction: column; gap: var(--cds-gap-lg); font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+  .ic-title { margin: 0; font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); }
+  .ic-take { margin: 0.375rem 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); max-width: 60ch; }
+  .ic-take b { font-weight: 600; color: var(--color-fg); }
+  .ic-filters { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: end; }
+  .ic-field { display: flex; flex-direction: column; gap: 0.25rem; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ic-field select { font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 0.375rem 0.625rem; min-width: 8rem; }
+  .ic-seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; background: var(--color-panel); }
+  .ic-seg button { font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); background: transparent; border: 0; padding: 0.4375rem 0.875rem; cursor: pointer; }
+  .ic-seg button + button { border-left: 1px solid var(--color-border-line); }
+  .ic-seg button[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); }
+  .ic-seg button:focus-visible, .ic-field select:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+  .ic-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: var(--cds-gap-md); }
+  .ic-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+  .ic-card h2 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+  .ic-note { margin: 0.125rem 0 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ic-kpi-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ic-kpi-num { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 2.5rem; line-height: 1.1; font-variant-numeric: tabular-nums; margin-top: 0.25rem; }
+  .ic-kpi-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: 0.25rem; }
+  .ic-bar { height: 0.5rem; border-radius: 0.25rem; background: var(--cds-chart-grid); margin-top: 0.75rem; overflow: hidden; }
+  .ic-bar > i { display: block; height: 100%; width: 0; background: var(--cds-chart-status-ok, var(--color-ok)); border-radius: 0.25rem; transition: width var(--cds-dur-slow); }
+  .ic-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--cds-gap-md); }
+  .ic-chart { position: relative; margin-top: var(--cds-gap-md); min-height: 14rem; }
+  .ic-chart svg { display: block; width: 100%; }
+  .ic-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; z-index: 2; }
+  .ic-tablewrap { overflow: auto; max-height: 30rem; margin-top: var(--cds-gap-md); }
+  .ic-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); font-variant-numeric: tabular-nums; }
+  .ic-table th { position: sticky; top: 0; background: var(--color-panel); text-align: left; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .ic-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .ic-pill { display: inline-flex; align-items: center; gap: 0.375rem; }
+  .ic-pill::before { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: currentColor; }
+  .ic-pill.ok { color: var(--color-ok); }
+  .ic-pill.pend { color: var(--color-warn); }
+  .ic-empty { color: var(--color-fg-muted); font-size: var(--cds-font-size-body); padding: var(--cds-pad-md) 0; }
+  .ic-msg { display: none; align-items: center; gap: 0.5rem; color: var(--color-fg-muted); }
+  .ic-msg.on { display: flex; }
+  .ic-msg::before { content: ""; width: 0.375rem; height: 0.375rem; border-radius: 50%; background: var(--color-bad); }
+  .ic-table tbody tr { cursor: pointer; }
+  .ic-table tbody tr:hover td { background: var(--cds-surface-hover, rgba(127,127,127,.08)); }
+  .ic-table tbody tr:focus-visible { outline: 2px solid var(--color-fg); outline-offset: -2px; }
+  .ic-dlg { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-panel); color: var(--color-fg); padding: 0; width: min(40rem, calc(100vw - 2rem)); max-height: 80vh; box-shadow: var(--cds-shadow-popover); }
+  .ic-dlg::backdrop { background: rgba(0,0,0,.35); }
+  .ic-dlg-h { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding: var(--cds-pad-lg) var(--cds-pad-lg) 0; }
+  .ic-dlg-h h2 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+  .ic-dlg-x { font: inherit; background: transparent; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); color: var(--color-fg); padding: 0.25rem 0.625rem; cursor: pointer; }
+  .ic-dlg-b { padding: var(--cds-pad-md) var(--cds-pad-lg) var(--cds-pad-lg); overflow: auto; max-height: calc(80vh - 5rem); }
+  .ic-dlg-b table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); font-variant-numeric: tabular-nums; }
+  .ic-dlg-b th { text-align: left; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: 0.375rem 0.5rem; border-bottom: 1px solid var(--color-border-line); }
+  .ic-dlg-b td { padding: 0.375rem 0.5rem; border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+  .ic-dlg-b td.n, .ic-dlg-b th.n { text-align: right; white-space: nowrap; }
+  .ic-dlg-b tfoot td { font-weight: 600; border-bottom: 0; }
+  [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+</style>
+</head>
+<body>
+
+
+<div class="ic">
+  <header>
+    <h1 class="ic-title" id="ic-title">Inspección de contenedores</h1>
+    <p class="ic-take" id="ic-take">Cargando…</p>
+    <p class="ic-msg" id="ic-msg"></p>
+    <p class="ic-note" id="ic-upd"></p>
+    <button type="button" class="ic-login" id="ic-login" hidden>Iniciar sesión con Microsoft</button>
+  </header>
+
+  <section class="ic-filters" id="filtros" aria-label="Filtros">
+    <label class="ic-field" for="ic-anio">Año<select id="ic-anio"></select></label>
+    <label class="ic-field" for="ic-mes">Mes<select id="ic-mes"></select></label>
+    <div class="ic-field">Estado
+      <div class="ic-seg" role="group" aria-label="Estado de revisión">
+        <button type="button" id="ic-e-todas" data-estado="todas">Todas</button>
+        <button type="button" id="ic-e-pend" data-estado="pendientes">Pendientes de revisar</button>
+        <button type="button" id="ic-e-rev" data-estado="revisadas">Revisadas</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="ic-kpis" id="kpis" aria-label="Resumen del mes">
+    <div class="ic-card">
+      <div class="ic-kpi-label">OC revisadas</div>
+      <div class="ic-kpi-num" id="k-pct" data-source="resumen" data-field="pct">—</div>
+      <div class="ic-bar"><i id="k-bar"></i></div>
+    </div>
+    <div class="ic-card">
+      <div class="ic-kpi-label">OC que llegan a planta</div>
+      <div class="ic-kpi-num" id="k-total" data-source="resumen" data-field="total">—</div>
+      <div class="ic-kpi-sub" id="k-mes">en el mes</div>
+    </div>
+    <div class="ic-card">
+      <div class="ic-kpi-label">Revisadas</div>
+      <div class="ic-kpi-num" id="k-rev" data-source="resumen" data-field="revisadas">—</div>
+      <div class="ic-kpi-sub">con inspección registrada</div>
+    </div>
+    <div class="ic-card">
+      <div class="ic-kpi-label">Pendientes de revisar</div>
+      <div class="ic-kpi-num" id="k-pend" data-source="resumen" data-field="pendientes">—</div>
+      <div class="ic-kpi-sub"><span id="k-recpend" data-source="resumen" data-field="recibidasPend">—</span> ya recibidas en planta</div>
+    </div>
+  </section>
+
+  <section class="ic-grid">
+    <div class="ic-card">
+      <h2 id="ic-chart-h">Porcentaje revisado por mes</h2>
+      <p class="ic-note">Selecciona una barra para cambiar de mes. Incluye el historial de la hoja Recibidas. Si una fila no trae Mes en planta, se usa el día en planta, el ATA o el ETA.</p>
+      <div class="ic-chart" id="ic-chart" data-source="resumen"></div>
+    </div>
+    <div class="ic-card">
+      <h2 id="ic-table-h">Órdenes de compra</h2>
+      <p class="ic-note">Haz clic en una OC para ver sus productos y cantidades. Una OC está revisada cuando existe al menos una inspección con ese número en la lista RevisionCalidadContenedores. Las OC anuladas no cuentan.</p>
+      <div class="ic-tablewrap">
+        <table class="ic-table" id="ic-table" data-source="ocs" data-row-key="id">
+          <thead><tr>
+            <th data-field="oc">OC</th>
+            <th data-field="proveedor">Proveedor</th>
+            <th data-field="dia">Día en planta</th>
+            <th data-field="status">Estado en matriz</th>
+            <th data-field="estado">Revisión</th>
+            <th data-field="fechaInsp">Última inspección</th>
+          </tr></thead>
+          <tbody id="ic-tbody"></tbody>
+        </table>
+      </div>
+      <div class="ic-empty" id="ic-tempty" hidden>No hay OC con este filtro.</div>
+    </div>
+  </section>
+</div>
+
+<dialog class="ic-dlg" id="ic-dlg" aria-labelledby="ic-dlg-t">
+  <div class="ic-dlg-h">
+    <div><h2 id="ic-dlg-t">OC</h2><p class="ic-note" id="ic-dlg-s"></p></div>
+    <button type="button" class="ic-dlg-x" id="ic-dlg-x">Cerrar</button>
+  </div>
+  <div class="ic-dlg-b" id="ic-dlg-b"></div>
+</dialog>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="config.js"></script>
+<script src="gate.js"></script>
+<script src="shim.js"></script>
+<script>
+
+  const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const MES3 = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+  dash.loader('matriz', { description: 'Filas de la hoja Matriz (leídas con SheetJS).', fn: ({ answer }) => answer });
+
+  dash.loader('recibidas', {
+    description: 'Convierte el CSV "Recibidas resumen" (generado cada día a las 10 pm desde la hoja Recibidas de la matriz) en filas.',
+    fn: ({ answer }) => {
+      const text = typeof answer === 'string' ? answer : (answer && answer.text) || JSON.stringify(answer);
+      const parse = (line) => {
+        const out = []; let cur = ''; let q = false;
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+          else if (c === '"') q = true;
+          else if (c === ',') { out.push(cur); cur = ''; }
+          else cur += c;
+        }
+        out.push(cur);
+        return out.map((x) => x.trim());
+      };
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (!lines.length || !/^Status,/i.test(lines[0])) throw new Error('El CSV de recibidas no tiene el encabezado esperado.');
+      const columns = parse(lines[0]);
+      const rows = lines.slice(1).map((l) => {
+        const cells = parse(l); const row = {};
+        columns.forEach((c, j) => { row[c] = cells[j] || ''; });
+        return row;
+      });
+      return { columns, rows };
+    },
+  });
+
+  dash.loader('inspecciones', {
+    description: 'Convierte el CSV "Inspecciones resumen" (generado cada día a las 10 pm desde la lista RevisionCalidadContenedores) en filas.',
+    fn: ({ answer }) => {
+      const text = typeof answer === 'string' ? answer : (answer && answer.text) || JSON.stringify(answer);
+      const parse = (line) => {
+        const out = []; let cur = ''; let q = false;
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+          else if (c === '"') q = true;
+          else if (c === ',') { out.push(cur); cur = ''; }
+          else cur += c;
+        }
+        out.push(cur);
+        return out.map((x) => x.trim());
+      };
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (!lines.length || !/^Id,/i.test(lines[0])) throw new Error('El CSV de inspecciones no tiene el encabezado esperado.');
+      const columns = parse(lines[0]);
+      const rows = lines.slice(1).map((l) => {
+        const cells = parse(l); const row = {};
+        columns.forEach((c, j) => { row[c] = cells[j] || ''; });
+        return row;
+      });
+      return { columns, rows };
+    },
+  });
+
+  dash.calc('ocs', {
+    inputs: ['matriz', 'recibidas', 'inspecciones'],
+    title: 'OC por mes en planta',
+    description: 'Une cada OC de la matriz y del historial de recibidas, por mes en planta, con las inspecciones registradas. Excluye anuladas.',
+    fn: (matriz, recibidas, inspecciones) => {
+      const M = { ene: 1, jan: 1, feb: 2, mar: 3, abr: 4, apr: 4, may: 5, jun: 6, jul: 7, ago: 8, aug: 8, sep: 9, set: 9, oct: 10, nov: 11, dic: 12, dec: 12 };
+      const norm = (s) => String(s == null ? '' : s).trim().toUpperCase();
+      const anioDe = (y) => (Number(y) < 100 ? 2000 + Number(y) : Number(y));
+      // devuelve {anio, mes} a partir de un serial de Excel, "oct-26", "24/01/2025" o "8-Jul-23"
+      const serial = (s) => {
+        s = String(s || '').trim();
+        if (!/^\d{5}(\.\d+)?$/.test(s)) return null;
+        const n = Number(s);
+        if (n < 36000 || n > 60000) return null;
+        const d = new Date(Math.round((n - 25569) * 86400000));
+        return { anio: d.getUTCFullYear(), mes: d.getUTCMonth() + 1, dia: d.getUTCDate() };
+      };
+      const fecha = (s) => {
+        s = String(s || '').trim();
+        const sr = serial(s);
+        if (sr) return sr;
+        let m = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(s);
+        if (m) return { anio: Number(m[3]), mes: Number(m[2]) };
+        m = /^(\d{1,2})-([A-Za-z]{3})[a-z]*-(\d{2,4})$/.exec(s);
+        if (m && M[m[2].toLowerCase()]) return { anio: anioDe(m[3]), mes: M[m[2].toLowerCase()] };
+        return null;
+      };
+      const mesPlanta = (s) => {
+        const sr = serial(s);
+        if (sr) return sr;
+        const m = /^([a-z]{3})-(\d{2})$/i.exec(String(s || '').trim());
+        return m && M[m[1].toLowerCase()] ? { anio: anioDe(m[2]), mes: M[m[1].toLowerCase()] } : null;
+      };
+      const verDia = (s) => {
+        const f = fecha(s);
+        if (!f) return '';
+        const sr = serial(s);
+        return sr ? String(sr.dia).padStart(2, '0') + '/' + String(sr.mes).padStart(2, '0') + '/' + sr.anio : String(s).trim();
+      };
+      const insp = new Map();
+      for (const r of inspecciones) {
+        const k = norm(r.OrdenCompra);
+        if (!k) continue;
+        const e = insp.get(k) || { n: 0, fecha: '' };
+        e.n += 1;
+        const f = String(r.Fecha || '');
+        if (f > e.fecha) e.fecha = f;
+        insp.set(k, e);
+      }
+      const out = new Map();
+      const nMat = matriz.length;
+      let idx = -1;
+      for (const r of [...matriz, ...recibidas]) {
+        idx += 1;
+        const esRec = idx >= nMat;
+        const oc = norm(r.OC);
+        const status = String(r.Status || '').trim();
+        if (!/^\d{3,5}[A-Z]?$/.test(oc) || status.toLowerCase() === 'anulada') continue;
+        const when = mesPlanta(r['Mes en planta']) || fecha(r['Dia en planta']) || fecha(r.ATA) || fecha(r.ETA);
+        if (!when) continue;
+        const id = when.anio + '-' + String(when.mes).padStart(2, '0') + '-' + oc;
+        const dia = verDia(r['Dia en planta']);
+        let e = out.get(id);
+        if (!e) {
+          const hit = insp.get(oc);
+          e = { id, oc, proveedor: r.PROVEEDOR || '', anio: when.anio, mes: when.mes, status, dia, lineas: 0,
+                estado: hit ? 'Revisada' : 'Pendiente', inspecciones: hit ? hit.n : 0, fechaInsp: hit ? hit.fecha : '', items: [] };
+          out.set(id, e);
+        }
+        e.lineas += 1;
+        const desc = String(r['Descripción'] || r.Descripcion || '').trim();
+        if (desc && !(esRec && e.deMatriz)) {
+          const bu = Number(String(r.Bultos || '').replace(/\s/g, '').replace(/,/g, '.'));
+          e.items.push({ codigo: String(r['Código'] || r.Codigo || '').trim(), desc, cant: String(r.Bultos || '').trim() !== '' && Number.isFinite(bu) ? bu : null });
+          if (!esRec) e.deMatriz = true;
+        }
+        if (!e.dia && dia) e.dia = dia;
+      }
+      return [...out.values()];
+    },
+  });
+
+  dash.calc('resumen', {
+    inputs: ['ocs'],
+    title: 'Resumen por mes',
+    description: 'Cuenta OC totales, revisadas y pendientes por mes en planta. El mes 0 es el año completo.',
+    fn: (ocs) => {
+      const g = new Map();
+      const sumar = (k, anio, mes, r) => {
+        const e = g.get(k) || { anio, mes, total: 0, revisadas: 0, pendientes: 0, recibidasPend: 0, pct: 0 };
+        e.total += 1;
+        if (r.estado === 'Revisada') e.revisadas += 1;
+        else { e.pendientes += 1; if (r.status === 'Recibida') e.recibidasPend += 1; }
+        g.set(k, e);
+      };
+      for (const r of ocs) { sumar(r.anio * 100 + r.mes, r.anio, r.mes, r); sumar(r.anio * 100, r.anio, 0, r); }
+      return [...g.values()]
+        .map((e) => ({ ...e, pct: e.total ? e.revisadas / e.total : 0 }))
+        .sort((a, b) => a.anio - b.anio || a.mes - b.mes);
+    },
+  });
+
+  const hoy = new Date();
+  dash.setParams({ anio: hoy.getFullYear(), mes: hoy.getMonth() + 1, estado: 'todas' });
+
+  const $ = (id) => document.getElementById(id);
+  const pctFmt = d3.format('.0%');
+  const root = $('ic-chart');
+  const tip = document.createElement('div');
+  tip.className = 'ic-tip';
+  tip.hidden = true;
+  root.appendChild(tip);
+
+  $('ic-anio').addEventListener('change', (e) => dash.setParams({ anio: Number(e.target.value) }));
+  $('ic-mes').addEventListener('change', (e) => dash.setParams({ mes: Number(e.target.value) }));
+  document.querySelectorAll('.ic-seg button').forEach((b) =>
+    b.addEventListener('click', () => dash.setParams({ estado: b.dataset.estado }))
+  );
+
+  const mark = (el, row) => {
+    el.dataset.where = 'anio=' + row.anio + '&mes=' + row.mes;
+  };
+
+
+  const dlg = $('ic-dlg');
+  $('ic-dlg-x').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', (ev) => { if (ev.target === dlg) dlg.close(); });
+  const numFmt = new Intl.NumberFormat('es-CR');
+  function abrirOC(r) {
+    $('ic-dlg-t').textContent = 'OC ' + r.oc + (r.proveedor ? ' · ' + r.proveedor : '');
+    $('ic-dlg-s').textContent = (r.dia ? 'Día en planta: ' + r.dia + '. ' : '') + 'Estado en matriz: ' + (r.status || '—') + '. Revisión: ' + r.estado + '.';
+    const b = $('ic-dlg-b');
+    b.replaceChildren();
+    if (!r.items.length) {
+      const p = document.createElement('p');
+      p.className = 'ic-empty';
+      p.textContent = 'Esta OC no tiene detalle de productos en la matriz ni en el historial de recibidas.';
+      b.appendChild(p);
+    } else {
+      const t = document.createElement('table');
+      t.dataset.source = 'ocs';
+      t.dataset.field = 'items';
+      t.dataset.where = 'id=' + r.id;
+      t.innerHTML = '<thead><tr><th>Código</th><th>Producto</th><th class="n">Cantidad</th></tr></thead>';
+      const tb = document.createElement('tbody');
+      let total = 0;
+      for (const it of r.items) {
+        const tr = document.createElement('tr');
+        [it.codigo, it.desc, it.cant == null ? '—' : numFmt.format(it.cant)].forEach((v, i) => {
+          const td = document.createElement('td');
+          if (i > 1) td.className = 'n';
+          td.textContent = v;
+          tr.appendChild(td);
+        });
+        if (it.cant != null) total += it.cant;
+        tb.appendChild(tr);
+      }
+      t.appendChild(tb);
+      const tf = document.createElement('tfoot');
+      const fr = document.createElement('tr');
+      ['', r.items.length + ' productos', numFmt.format(total)].forEach((v, i) => {
+        const td = document.createElement('td');
+        if (i > 1) td.className = 'n';
+        td.textContent = v;
+        fr.appendChild(td);
+      });
+      tf.appendChild(fr);
+      t.appendChild(tf);
+      b.appendChild(t);
+    }
+    dlg.showModal();
+  }
+
+  dash.onData(() => {
+    const p = dash.params();
+    const anio = Number(p.anio), mes = Number(p.mes), estado = p.estado || 'todas';
+    const rs = dash.data('resumen');
+    const oc = dash.data('ocs');
+    const msg = $('ic-msg');
+    const bad = rs.status !== 'ok' || oc.status !== 'ok';
+    msg.classList.toggle('on', bad && rs.status !== 'loading' && oc.status !== 'loading');
+    if (rs.status === 'connect' || oc.status === 'connect') msg.textContent = 'Inicia sesión con tu cuenta de Microsoft para ver las inspecciones.';
+    else if (rs.status === 'declined' || oc.status === 'declined') msg.textContent = 'Falta el permiso para leer los archivos de SharePoint. Pide a TI que apruebe el acceso de la aplicación.';
+    else msg.textContent = 'No se pudieron cargar los datos' + (window.__lastError ? ': ' + window.__lastError : '.');
+    if (bad) {
+      $('ic-take').textContent = rs.status === 'loading' || oc.status === 'loading' ? 'Cargando…' : '';
+      return;
+    }
+    const resumen = rs.data;
+    const ocs = oc.data;
+
+    // Filtros
+    const anios = [...new Set([...resumen.map((r) => r.anio), anio])].sort();
+    const selA = $('ic-anio');
+    selA.replaceChildren(...anios.map((a) => new Option(String(a), String(a))));
+    selA.value = String(anio);
+    const meses = [...new Set([...resumen.filter((r) => r.anio === anio).map((r) => r.mes), mes])].sort((a, b) => a - b);
+    const selM = $('ic-mes');
+    selM.replaceChildren(new Option('Todo el año', '0'), ...meses.filter((m) => m > 0).map((m) => new Option(MESES[m - 1], String(m))));
+    selM.value = String(mes);
+    document.querySelectorAll('.ic-seg button').forEach((b) =>
+      b.setAttribute('aria-pressed', String(b.dataset.estado === estado))
+    );
+
+    // Tarjetas del mes
+    const row = resumen.find((r) => r.anio === anio && r.mes === mes);
+    const label = mes ? MESES[mes - 1] + ' de ' + anio : 'todo ' + anio;
+    $('k-mes').textContent = mes ? 'en ' + label : 'en ' + anio;
+    const set = (id, field, v) => {
+      const el = $(id);
+      el.textContent = row ? v : '—';
+      if (row) mark(el, row);
+      else delete el.dataset.where;
+      el.dataset.source = 'resumen';
+      el.dataset.field = field;
+    };
+    set('k-pct', 'pct', row ? pctFmt(row.pct) : '');
+    set('k-total', 'total', row ? String(row.total) : '');
+    set('k-rev', 'revisadas', row ? String(row.revisadas) : '');
+    set('k-pend', 'pendientes', row ? String(row.pendientes) : '');
+    set('k-recpend', 'recibidasPend', row ? String(row.recibidasPend) : '');
+    $('k-bar').style.width = row ? Math.round(row.pct * 100) + '%' : '0%';
+
+    $('ic-take').textContent = row
+      ? 'En ' + label + ' hay ' + row.total + ' OC en planta. ' + row.revisadas + ' ya tienen inspección y faltan ' + row.pendientes + (row.recibidasPend ? ', de las cuales ' + row.recibidasPend + ' ya están recibidas.' : '.')
+      : 'No hay OC en ' + label + ' en la matriz ni en el historial.';
+
+    // Gráfico por mes
+    $('ic-chart-h').textContent = 'Porcentaje revisado por mes, ' + anio;
+    drawChart(resumen.filter((r) => r.anio === anio && r.mes > 0), mes);
+
+    // Tabla
+    $('ic-table-h').textContent = 'Órdenes de compra de ' + label;
+    const body = $('ic-tbody');
+    const list = ocs
+      .filter((r) => r.anio === anio && (mes === 0 || r.mes === mes))
+      .filter((r) => estado === 'todas' || (estado === 'pendientes' ? r.estado === 'Pendiente' : r.estado === 'Revisada'))
+      .sort((a, b) => (a.estado === b.estado ? a.mes - b.mes || a.oc.localeCompare(b.oc, 'es', { numeric: true }) : a.estado === 'Pendiente' ? -1 : 1));
+    body.replaceChildren();
+    for (const r of list) {
+      const tr = document.createElement('tr');
+      tr.dataset.key = r.id;
+      const cells = [r.oc, r.proveedor, r.dia || (mes === 0 ? MES3[r.mes - 1] : '—'), r.status, null, r.fechaInsp ? r.fechaInsp.slice(0, 10) : '—'];
+      cells.forEach((v, i) => {
+        const td = document.createElement('td');
+        if (i === 4) {
+          const s = document.createElement('span');
+          s.className = 'ic-pill ' + (r.estado === 'Revisada' ? 'ok' : 'pend');
+          s.textContent = r.estado;
+          td.appendChild(s);
+        } else td.textContent = v;
+        tr.appendChild(td);
+      });
+      tr.tabIndex = 0;
+      tr.title = 'Ver productos y cantidades';
+      const abrir = () => abrirOC(r);
+      tr.addEventListener('click', abrir);
+      tr.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } });
+      body.appendChild(tr);
+    }
+    $('ic-tempty').hidden = list.length > 0;
+  });
+
+  function drawChart(data, mesSel) {
+    const w = Math.max(root.clientWidth, 280);
+    if (!root.clientWidth) return;
+    const h = 224, m = { t: 22, r: 8, b: 28, l: 36 };
+    root.querySelector('svg')?.remove();
+    const svg = d3.select(root).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${w} ${h}`);
+    const x = d3.scaleBand().domain(d3.range(1, 13)).range([m.l, w - m.r]).padding(0.28);
+    const y = d3.scaleLinear([0, 1], [h - m.b, m.t]);
+    svg.append('g').selectAll('line').data([0, 0.5, 1]).join('line')
+      .attr('x1', m.l).attr('x2', w - m.r).attr('y1', (d) => y(d)).attr('y2', (d) => y(d))
+      .attr('stroke', 'var(--cds-chart-grid)').attr('stroke-width', 1);
+    svg.append('g').selectAll('text').data([0, 0.5, 1]).join('text')
+      .attr('x', m.l - 6).attr('y', (d) => y(d) + 3).attr('text-anchor', 'end')
+      .attr('fill', 'var(--color-fg-muted)').attr('font-size', 11).text((d) => pctFmt(d));
+    svg.append('g').selectAll('text').data(d3.range(1, 13)).join('text')
+      .attr('x', (d) => x(d) + x.bandwidth() / 2).attr('y', h - 8).attr('text-anchor', 'middle')
+      .attr('fill', (d) => (d === mesSel ? 'var(--color-fg)' : 'var(--color-fg-muted)'))
+      .attr('font-size', 11).attr('font-weight', (d) => (d === mesSel ? 600 : 400)).text((d) => MES3[d - 1]);
+    const bars = svg.append('g').selectAll('g').data(data).join('g').style('cursor', 'pointer')
+      .on('click', (e, d) => dash.setParams({ mes: d.mes }))
+      .on('mousemove', (e, d) => {
+        const r = root.getBoundingClientRect();
+        tip.hidden = false;
+        tip.textContent = MESES[d.mes - 1] + ': ' + d.revisadas + ' de ' + d.total + ' OC revisadas (' + pctFmt(d.pct) + ')';
+        tip.style.left = Math.min(e.clientX - r.left + 12, Math.max(0, r.width - tip.offsetWidth - 4)) + 'px';
+        tip.style.top = Math.max(0, e.clientY - r.top - 34) + 'px';
+      })
+      .on('mouseleave', () => { tip.hidden = true; });
+    bars.append('rect')
+      .attr('x', (d) => x(d.mes)).attr('width', x.bandwidth())
+      .attr('y', (d) => y(Math.max(d.pct, 0.01))).attr('height', (d) => y(0) - y(Math.max(d.pct, 0.01)))
+      .attr('rx', 4)
+      .attr('fill', (d) => (d.mes === mesSel ? dash.colors[0] : 'var(--cds-chart-muted)'));
+    bars.append('text')
+      .attr('x', (d) => x(d.mes) + x.bandwidth() / 2).attr('y', (d) => y(Math.max(d.pct, 0.01)) - 5)
+      .attr('text-anchor', 'middle').attr('fill', 'var(--color-fg)').attr('font-size', 11)
+      .style('font-variant-numeric', 'tabular-nums').text((d) => pctFmt(d.pct));
+  }
+
+</script>
+</body>
+</html>
