@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Registro de producto off spec</title>
-<link rel="stylesheet" href="base.css?v=3">
+<link rel="stylesheet" href="base.css?v=4">
 <style>
   body { padding: clamp(1rem, 3vw, 2rem); }
   .wrap { max-width: 44rem; margin-inline: auto; display: flex; flex-direction: column; gap: var(--cds-gap-lg); }
@@ -44,6 +44,12 @@
   th { text-align: left; font-size: var(--cds-font-size-caption); font-weight: 600; color: var(--color-fg-muted); padding: .5rem .625rem; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
   td { padding: .5rem .625rem; border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
   td.n, th.n { text-align: right; }
+  .thumbs { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .th { position: relative; width: 5.5rem; height: 5.5rem; border-radius: var(--cds-radius); overflow: hidden; border: 1px solid var(--color-border-line); background: var(--color-bg); }
+  .th img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+  .th button { position: absolute; top: 2px; right: 2px; width: 1.75rem; height: 1.75rem; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; cursor: pointer; font-size: 1rem; line-height: 1; }
+  #rows tr { cursor: pointer; } #rows tr:hover td { background: var(--cds-surface-hover); } #rows tr.sel td { background: var(--cds-surface-hover); font-weight: 600; }
+  .editing { border-color: var(--color-fg); }
   #gate { display: none; text-align: center; padding: 2rem 0; }
   #gate p { color: var(--color-fg-muted); }
 </style>
@@ -88,27 +94,38 @@
       <div class="field"><label for="cant">6. Cantidad <span id="und"></span></label><input type="number" id="cant" inputmode="decimal" min="0" step="any"></div>
     </div>
 
+    <div class="field"><label for="oc">OC o contenedor de origen (opcional)</label><select id="oc"></select></div>
+
     <div class="field"><label for="obs">Observaciones <span id="obs-req"></span></label><textarea id="obs" maxlength="1000"></textarea></div>
+
+    <div class="field">
+      <span class="lbl">Fotos</span>
+      <div class="thumbs" id="thumbs"></div>
+      <input type="file" id="fotos" accept="image/*" multiple hidden>
+      <div><button type="button" class="ic-btn2" id="addph">Agregar fotos</button></div>
+    </div>
 
     <div class="actions">
       <button class="ic-login" id="send" type="submit" disabled>Registrar</button>
+      <button class="ic-btn2" id="cancel" type="button" hidden>Cancelar edición</button>
       <p class="msg" id="msg" role="status" aria-live="polite"></p>
     </div>
   </form>
 
   <section class="card" id="recent" hidden>
     <h2>Últimos registros</h2>
+    <p class="note">Toca un registro para editarlo o agregarle fotos.</p>
     <div class="tw"><table>
-      <thead><tr><th>Fecha</th><th>Producto</th><th>Defecto</th><th class="n">Cantidad</th><th>Tratamiento</th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Producto</th><th>Defecto</th><th class="n">Cantidad</th><th>Tratamiento</th><th class="n">Fotos</th></tr></thead>
       <tbody id="rows"></tbody>
     </table></div>
     <p class="note" id="rnote"></p>
   </section>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
-<script src="config.js?v=3"></script>
-<script src="gate.js?v=3"></script>
-<script src="auth.js?v=3"></script>
-<script src="registro.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="gate.js?v=4"></script>
+<script src="auth.js?v=4"></script>
+<script src="registro.js?v=4"></script>
 </body>
 </html>

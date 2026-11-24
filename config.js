@@ -8,7 +8,8 @@ window.APP_CONFIG = {
   lists: {
     productos: 'a360b1ef-db85-4b6b-86de-d7c65c843782',   // Info de Productos (producto terminado)
     ps: 'fc1da8a8-c62c-4bd5-a5c8-0989f46fc9fc',          // Info de PS (semielaborados)
-    offspec: 'a7f18829-2e8d-4c7b-b3cf-1f8b219647f9'      // CALI_ProductoOffSpec (registros)
+    offspec: 'a7f18829-2e8d-4c7b-b3cf-1f8b219647f9',     // CALI_ProductoOffSpec (registros)
+    fotos: '57fab199-e729-4eda-bc55-7ef5a5c5c31f'        // CALI_OffSpecFotos (biblioteca de fotos, una carpeta por registro)
   },
   // Id de aplicación (cliente) del registro en Microsoft Entra (ver README.md)
   clientId: '5f4d98f1-0d8f-48a2-b4fa-d08d14d5ac1f',

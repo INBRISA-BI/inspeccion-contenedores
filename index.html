@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Calidad INBRISA</title>
-<link rel="stylesheet" href="base.css?v=3">
+<link rel="stylesheet" href="base.css?v=4">
 <style>
   body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .625rem 1rem; border-bottom: 1px solid var(--color-border-line); background: var(--color-panel); }
@@ -25,6 +25,7 @@
     <button role="tab" id="t-contenedores" data-tab="contenedores" aria-selected="false">Inspección de contenedores</button>
     <button role="tab" id="t-fichas" data-tab="fichas" aria-selected="false">Fichas de calidad</button>
     <button role="tab" id="t-offspec" data-tab="offspec" aria-selected="false">Registro off spec</button>
+    <button role="tab" id="t-resumen" data-tab="resumen" aria-selected="false">Resumen off spec</button>
   </nav>
   <div class="who">
     <span id="who"></span>
@@ -36,13 +37,14 @@
   <iframe id="f-contenedores" title="Inspección de contenedores"></iframe>
   <iframe id="f-fichas" title="Fichas de calidad"></iframe>
   <iframe id="f-offspec" title="Registro de producto off spec"></iframe>
+  <iframe id="f-resumen" title="Resumen de producto off spec"></iframe>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
-<script src="config.js?v=3"></script>
-<script src="gate.js?v=3"></script>
-<script src="auth.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="gate.js?v=4"></script>
+<script src="auth.js?v=4"></script>
 <script>
-  const SRC = { contenedores: 'contenedores.html?v=3', offspec: 'registro.html?v=3', fichas: window.APP_CONFIG.fichasUrl };
+  const SRC = { contenedores: 'contenedores.html?v=4', offspec: 'registro.html?v=4', resumen: 'resumen.html?v=4', fichas: window.APP_CONFIG.fichasUrl };
   const SCOPES = ['Files.Read.All', 'Sites.ReadWrite.All'];
   const $ = (id) => document.getElementById(id);
   function show(tab) {
