@@ -112,11 +112,11 @@
   }
   function pick(p) {
     st.sel = p; inp.value = p.cod + ' · ' + p.desc; open(false);
-    $('picked').textContent = 'Seleccionado: ' + p.desc + (p.und ? ' (unidad: ' + p.und + ')' : '');
-    $('und').textContent = p.und ? '(' + p.und + ')' : '';
+    $('picked').textContent = 'Seleccionado: ' + p.desc;
+    if (!st.edit) $('uni').value = /caj/i.test(p.und) ? 'Cajas' : 'Unidades';
     check();
   }
-  inp.addEventListener('input', () => { st.sel = null; st.active = -1; $('picked').textContent = ''; $('und').textContent = ''; render(); check(); });
+  inp.addEventListener('input', () => { st.sel = null; st.active = -1; $('picked').textContent = ''; render(); check(); });
   inp.addEventListener('focus', () => { if (!inp.disabled && !st.sel) render(); });
   inp.addEventListener('blur', () => open(false));
   inp.addEventListener('keydown', (e) => {
@@ -130,7 +130,7 @@
   // ----- tipo de producto
   const PH = { terminado: 'Busca por código o nombre del producto terminado', semi: 'Busca por código o nombre del semielaborado' };
   async function setTipo(t, keepSel) {
-    st.tipo = t; if (!keepSel) { st.sel = null; inp.value = ''; $('picked').textContent = ''; $('und').textContent = ''; }
+    st.tipo = t; if (!keepSel) { st.sel = null; inp.value = ''; $('picked').textContent = ''; }
     st.active = -1;
     document.querySelectorAll('#tipo button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.tipo === t)));
     inp.disabled = false; inp.placeholder = PH[t];
@@ -203,10 +203,11 @@
     return f;
   }
   function check() { $('send').disabled = missing().length > 0; $('obs-req').textContent = $('defecto').value === 'Otro' ? '(obligatorio con "Otro")' : '(opcional)'; }
-  ['defecto', 'trat', 'fecha', 'cant', 'obs', 'oc'].forEach((id) => { $(id).addEventListener('input', check); $(id).addEventListener('change', check); });
+  ['defecto', 'trat', 'fecha', 'cant', 'obs', 'oc', 'uni'].forEach((id) => { $(id).addEventListener('input', check); $(id).addEventListener('change', check); });
 
   function clearForm(keepDate) {
-    st.sel = null; inp.value = ''; $('picked').textContent = ''; $('und').textContent = '';
+    st.sel = null; inp.value = ''; $('picked').textContent = '';
+    $('uni').value = 'Unidades';
     ['defecto', 'trat', 'oc'].forEach((id) => { $(id).value = ''; });
     $('cant').value = ''; $('obs').value = '';
     if (!keepDate) $('fecha').value = hoy();
@@ -232,7 +233,7 @@
     const p = (st.cat[tipo] || []).find((x) => x.cod === f.CodigoProducto) || { cod: f.CodigoProducto || '', desc: f.Title || '', und: f.Unidad || '', cat: '', key: '' };
     pick(p);
     const has = (sel, v) => { if (v && ![...sel.options].some((o) => o.value === v)) sel.appendChild(new Option(v, v)); sel.value = v || ''; };
-    has($('defecto'), f.TipoDefecto); has($('trat'), f.Tratamiento); has($('oc'), f.OC);
+    has($('uni'), /caj/i.test(f.Unidad || '') ? 'Cajas' : (!f.Unidad || /^(und?|unid\w*|unidad)$/i.test(f.Unidad) ? 'Unidades' : f.Unidad)); has($('defecto'), f.TipoDefecto); has($('trat'), f.Tratamiento); has($('oc'), f.OC);
     $('fecha').value = String(f.FechaDefecto || '').slice(0, 10); $('cant').value = f.Cantidad == null ? '' : f.Cantidad; $('obs').value = f.Observaciones || '';
     let names = []; try { names = JSON.parse(f.Fotos || '[]'); } catch (e) { names = []; }
     st.keep = names.map((n) => ({ n })); drawThumbs(); loadPhotoUrls(id);
@@ -257,7 +258,7 @@
     const fields = {
       Title: p.desc || p.cod, TipoProducto: st.tipo === 'terminado' ? 'Producto terminado' : 'Semielaborado', CodigoProducto: p.cod,
       TipoDefecto: $('defecto').value, FechaDefecto: $('fecha').value + 'T12:00:00Z', Cantidad: Number($('cant').value),
-      Unidad: p.und || '', Tratamiento: $('trat').value, Observaciones: $('obs').value.trim(), OC: $('oc').value,
+      Unidad: $('uni').value, Tratamiento: $('trat').value, Observaciones: $('obs').value.trim(), OC: $('oc').value,
     };
     $('send').disabled = true; say('Guardando…');
     let id = editing ? editing.id : null, stage = 'registro';
@@ -330,5 +331,6 @@
     $('btn-login').hidden = !!noButton;
   }
   $('btn-login').addEventListener('click', () => window.icAuth.login(SC));
+  window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'ic-show' && st.siteId && !st.edit) loadRecent(); });
   document.addEventListener('DOMContentLoaded', () => window.icGate(start));
 })();

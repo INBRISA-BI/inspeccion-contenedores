@@ -41,7 +41,7 @@
   </header>
   <div id="gate"><p id="gate-msg">Inicia sesión con tu cuenta de Microsoft para ver el resumen.</p><button class="ic-login" id="btn-login" type="button">Iniciar sesión con Microsoft</button></div>
   <div id="main" hidden>
-    <div class="bar"><div class="field"><label for="mes">Mes</label><select id="mes"></select></div><p class="note" id="status"></p></div>
+    <div class="bar"><div class="field"><label for="mes">Mes</label><select id="mes"></select></div><button class="ic-btn2" id="refresh" type="button">Actualizar</button><p class="note" id="status"></p></div>
     <div class="kpis" id="kpis" style="margin-top:1rem"></div>
     <div class="card" style="margin-top:1rem"><h2>Registros por mes</h2><div id="chart"></div></div>
     <div class="two" style="margin-top:1rem">
@@ -50,7 +50,7 @@
     </div>
     <div class="card" style="margin-top:1rem"><h2>Defectos por contenedor (OC)</h2>
       <p class="note" id="oc-note"></p>
-      <div class="tw"><table><thead><tr><th>OC</th><th>Proveedor</th><th>En planta</th><th>Inspección</th><th class="n">Recibido</th><th class="n">Off spec</th><th class="n">% defectos</th><th>Registros</th></tr></thead><tbody id="t-oc"></tbody></table></div>
+      <div class="tw"><table><thead><tr><th>OC</th><th>Proveedor</th><th>En planta</th><th>Inspección</th><th class="n">Recibido (mismos productos)</th><th class="n">Off spec</th><th class="n">% defectos</th><th>Registros</th></tr></thead><tbody id="t-oc"></tbody></table></div>
     </div>
     <div class="card" style="margin-top:1rem"><h2>Productos con más defectos</h2><div class="tw"><table><thead><tr><th>Producto</th><th class="n">Registros</th><th>Cantidad</th></tr></thead><tbody id="t-prod"></tbody></table></div></div>
   </div>
