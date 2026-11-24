@@ -50,7 +50,7 @@
     const m = new Map();
     st.rec.forEach((r) => {
       let o = m.get(r.OC); if (!o) { o = { oc: r.OC, pr: r.PROVEEDOR, ata: null, lines: new Map() }; m.set(r.OC, o); }
-      const d = serial(r.ATA); if (d && (!o.ata || d > o.ata)) o.ata = d;
+      const d = serial(r['Dia en planta']) || serial(r['Mes en planta']) || serial(r.ATA) || serial(r.ETA); if (d && (!o.ata || d > o.ata)) o.ata = d;
       o.lines.set(r.Codigo, (o.lines.get(r.Codigo) || 0) + (Number(r.Cantidad) || 0));
     });
     return m;
