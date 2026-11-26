@@ -217,10 +217,25 @@
   function setMode(item) {
     st.edit = item || null;
     $('send').textContent = item ? 'Guardar cambios' : 'Registrar';
-    $('cancel').hidden = !item;
+    $('cancel').hidden = !item; $('del').hidden = !item; resetDel();
     $('form').classList.toggle('editing', !!item);
     document.querySelectorAll('#rows tr').forEach((tr) => tr.classList.toggle('sel', !!item && tr.dataset.id === item.id));
   }
+  function resetDel() { const b = $('del'); b.textContent = 'Eliminar registro'; b.classList.remove('sure'); $('delno').hidden = true; st.sure = false; }
+  $('delno').addEventListener('click', () => { resetDel(); say('Editando el registro de ' + ($('prod').value || '') + '.'); });
+  $('del').addEventListener('click', async () => {
+    if (!st.edit) return;
+    if (!st.sure) { st.sure = true; $('del').textContent = 'Sí, eliminar definitivamente'; $('del').classList.add('sure'); $('delno').hidden = false; say('Se borrará el registro y sus fotos. No se puede deshacer.', 'bad'); return; }
+    const id = st.edit.id; $('del').disabled = true; say('Eliminando…');
+    try {
+      await g(L(CFG.lists.offspec) + '/items/' + id, { method: 'DELETE' });
+      try { await g(L(CFG.lists.fotos) + '/drive/root:/' + id, { method: 'DELETE' }); } catch (x) { /* sin carpeta de fotos */ }
+      clearForm(); setMode(null); say('Registro eliminado.', 'ok'); await loadRecent();
+    } catch (er) {
+      say(er.denied ? 'No tienes permiso para eliminar este registro.' : 'No se pudo eliminar. ' + er.message, 'bad'); resetDel();
+    }
+    $('del').disabled = false; check();
+  });
   $('cancel').addEventListener('click', () => { clearForm(); setMode(null); say(''); check(); });
 
   async function startEdit(id) {
